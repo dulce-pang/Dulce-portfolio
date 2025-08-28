@@ -5,7 +5,6 @@ import clsx from "clsx";
 
 interface YarnCardProps {
   yarn: Yarn;
-  // FIX: this matches your call onUpdate(yarn.id, inputData)
   onUpdate: (id: Yarn["id"], data: Partial<Yarn>) => void;
 }
 
@@ -137,7 +136,6 @@ const YarnCard = ({ yarn, onUpdate }: YarnCardProps) => {
   );
 
   const cardContainerClasses = clsx(
-    "h-48",
     "group",
     "relative",
     "rounded-md",
@@ -156,27 +154,37 @@ const YarnCard = ({ yarn, onUpdate }: YarnCardProps) => {
       className={cardContainerClasses}
       style={{ backgroundColor: bg }}
     >
-      <h1 className="font-semibold">Yarn Card</h1>
+      <h1 className="font-bold text-xl">Yarn Card</h1>
 
-      <div>
+        <h3 className="font-semibold">Quantity</h3>
         <input
+          key={yarn.id + "num"}
+          className={clsx(inputClasses, "text-xl mb-2 font-bold")}
+          value={inputData.num ?? ""}
+          onChange={(e) => handleInputChange(InputEnum.Num, e.target.value)}
+        />
+        <h3 className="font-semibold">Color</h3>
+        <input
+          key={yarn.id + "color"}
           className={clsx(inputClasses, "text-xl mb-2 font-bold")}
           value={inputData.color ?? ""}
           onChange={(e) => handleInputChange(InputEnum.Color, e.target.value)}
         />
-
+        <h3 className="font-semibold">Weight</h3>
         <input
-          className={inputClasses}
+          key={yarn.id + "weight"}
+          className={clsx(inputClasses, "text-xl mb-2 font-bold")}
           value={inputData.weight ?? ""}
           onChange={(e) => handleInputChange(InputEnum.Weight, e.target.value)}
         />
-      </div>
-
-      <input
-        className={inputClasses}
-        value={inputData.length ?? ""}
-        onChange={(e) => handleInputChange(InputEnum.Length, e.target.value)}
-      />
+      
+        <h3 className="font-semibold">Length</h3>
+        <input
+          key={yarn.id + "length"}
+          className={clsx(inputClasses, "text-xl mb-2 font-bold")}
+          value={inputData.length ?? ""}
+          onChange={(e) => handleInputChange(InputEnum.Length, e.target.value)}
+        />
 
       {isEdit ? (
         <>

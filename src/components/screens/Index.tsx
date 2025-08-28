@@ -15,6 +15,7 @@ import 'react-toastify/dist/ReactToastify.css';
 
 export type Yarn = {
   id: string,
+  num: string,
   color: string,
   weight: string,
   length: string
@@ -22,6 +23,7 @@ export type Yarn = {
 
 export enum InputEnum {
   Id = 'id',
+  Num = 'num',
   Color = 'color',
   Weight = 'weight',
   Length = 'length',
@@ -34,6 +36,7 @@ function Index() {
   const firestore = useFirestore();
   const storage = useStorage();
   const [inputData, setInputData] = useState<Partial<Yarn>>({
+    num: '',
     color: '',
     weight: '',
     length: '',
@@ -60,7 +63,7 @@ function Index() {
 
      updateDoc(docRef, data)
       .then(docRef => {
-        toast.success('🦄 updated the yarn successfully!', {
+        toast.success('🧶 updated the yarn successfully!', {
           position: "top-right",
           autoClose: 5000,
           hideProgressBar: false,
@@ -91,6 +94,7 @@ function Index() {
       const yarnsCollection = collection(firestore, "yarns");
 
       const newYarn: Partial<Yarn> = {
+        num: inputData.num,
         color: inputData.color,
         weight: inputData.weight,
         length: inputData.length
@@ -98,7 +102,7 @@ function Index() {
 
       const docRef = await addDoc(yarnsCollection, newYarn);
 
-      toast.success('🦄 Saved the yarn successfully!', {
+      toast.success('🧶 Saved the yarn successfully!', {
         position: "top-right",
         autoClose: 5000,
         hideProgressBar: false,
@@ -110,6 +114,7 @@ function Index() {
         });
       setYarns([...yarns,{ id: docRef.id, ...newYarn}]);
       setInputData({
+        num: '',
         color: '',
         weight: '',
         length: ''
@@ -125,6 +130,13 @@ function Index() {
       <div className="hero min-h-screen bg-slate-800">
         <div className="max-w-5xl mx-auto">
           <form className="flex items-center" onSubmit={handleFormSubmit}>
+            <input 
+              type="number" 
+              onChange={(e) => handleInputChange(InputEnum.Num, e.target.value)} 
+              value={inputData.num} 
+              placeholder="0" 
+              className="m-4 text-slate-50 bg-transparent border border-slate-700 focus:ring-slate-400 focus:outline-none p-4 rounded-lg"
+               />
             <input 
               type="text" 
               onChange={(e) => handleInputChange(InputEnum.Color, e.target.value)} 

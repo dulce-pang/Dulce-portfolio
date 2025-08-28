@@ -1,12 +1,12 @@
-# ⚡ react-ts-firebase-tutorial
+# ⚡ react-ts-yarn-inventory
 
-Tutorial built using Vite + React + TypeScript + Tailwind with Firebase.
+Yarn inventory system built using Vite + React + TypeScript + Tailwind with Firebase.
 
 ## Motivation
 
-To provide an efficient and a quick way to understand how to implement CRUD functionality in the new version of Firebase (v9). Paired with ReactJs and TS, Firebase is a great tool for a quick prototyping or for someone learning full stack development.
+To provide a way to categorize yarn you own so you can plan to use it for different projects.
 
-This starter uses following libraries:
+This uses following libraries:
 
 - Vite
 - React
@@ -19,11 +19,11 @@ This starter uses following libraries:
 - Prettier
 
 ## Proj Description
-<img width="562" alt="Screen Shot 2023-04-07 at 9 46 38 AM" src="https://user-images.githubusercontent.com/50160672/231044849-4c42bcde-5c6d-4ec2-8625-ed6faab6f517.png">
 
-This is an AI tool directory, where tools can be listed, added and edited to cover CRUD functions in Firebase, but really concepts could be applied to other setup whether it's a simple todo app or a first version of a more compilcated app, for example inventory management.
+<img width="562" alt="Screen Shot 2023-04-07 at 9 46 38 AM" src="./screenshots/frontpage.png">
 
-## Set up
+Yarn can be added, listed and editted. The application uses network calls through Fetch API to a public API that parses names to hex codes. This allows each yarn inventory entry to display the appropriate color.
+Set up
 
 ```shell
 mv .env.local.example .env.local
@@ -57,8 +57,6 @@ If you want to use Firebase, you should do:
 [React](https://github.com/facebook/react) is a JavaScript library for building user interfaces.
 
 Due to its awesome renderer system, there are many [React Renderor](https://github.com/chentsulin/awesome-react-renderer). So React can be not used only Web, for example, used by [React Native](https://reactnative.dev/).
-
-Let's dive into React and Vite can use with React.
 
 ## TypeScript
 
@@ -115,4 +113,6 @@ Please read: https://prettier.io/docs/en/integrating-with-linters.html.
 
 ### Support me!
 
-<a href="https://www.buymeacoffee.com/webdecoded5" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
+<a href="https://www.cafepurl.com" target="_blank"><img src="https://87ba7f31e77e0c7b04c7.cdn6.editmysite.com/uploads/b/87ba7f31e77e0c7b04c7f31143bf1bdfe07e66e6c228d18c8c5706783c6dfe9e/cafepurl_logo_1686019939.png?width=2400&optimize=medium" alt="Buy Me A Coffee" style="height: 60px !important;width: auto !important;" ></a>
+
+[Buy my yarn!](https://www.cafepurl.com "support me")
