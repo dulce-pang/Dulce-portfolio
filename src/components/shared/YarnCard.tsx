@@ -1,176 +1,205 @@
-import { useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Yarn, InputEnum } from "../screens/Index";
-import { PencilSquareIcon, CheckIcon, XCircleIcon } from '@heroicons/react/24/outline';
-import clsx from 'clsx';
+import { PencilSquareIcon, CheckIcon, XCircleIcon } from "@heroicons/react/24/outline";
+import clsx from "clsx";
 
 interface YarnCardProps {
-    yarn: Yarn,
-    onUpdate: (data: Partial<Yarn>) => void
+  yarn: Yarn;
+  // FIX: this matches your call onUpdate(yarn.id, inputData)
+  onUpdate: (id: Yarn["id"], data: Partial<Yarn>) => void;
 }
 
+// ---------- helpers ----------
+const sanitizeColor = (c?: string) => (c ?? "").toLowerCase().trim() || "slate";
+
+const isDarkBg = (bg: string) => {
+  const v = bg.toLowerCase().trim();
+  if (v === "black") return true;
+  // Try to parse #rgb/#rrggbb
+  const hex = v.startsWith("#")
+    ? v.slice(1)
+    : null;
+  if (!hex) return false;
+  const h = hex.length === 3
+    ? hex.split("").map(ch => ch + ch).join("")
+    : hex.length === 6
+      ? hex
+      : null;
+  if (!h) return false;
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  // Perceived luminance
+  const L = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  return L < 128;
+};
+
+async function fetchHexByName(name: string, retries = 2): Promise<string | null> {
+  const url = `https://api.color.pizza/v1/names/?name=${encodeURIComponent(name)}`;
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const resp = await fetch(url, { headers: { Accept: "application/json" } });
+      if (!resp.ok) {
+        if (resp.status === 429 && attempt < retries) {
+          // backoff: 300ms, 1200ms, ...
+          await new Promise(r => setTimeout(r, 300 * (attempt + 1) ** 2));
+          continue;
+        }
+        console.warn(`color.pizza error: ${resp.status}`);
+        return null;
+      }
+      const json = await resp.json();
+      const hex = json?.colors?.[0]?.hex;
+      return typeof hex === "string" ? hex : null;
+    } catch (e) {
+      if (attempt < retries) {
+        await new Promise(r => setTimeout(r, 300 * (attempt + 1) ** 2));
+        continue;
+      }
+      console.error(e);
+      return null;
+    }
+  }
+  return null;
+}
+// --------------------------------
 
 const YarnCard = ({ yarn, onUpdate }: YarnCardProps) => {
-    const [isEdit, setIsEdit] = useState<boolean>(false);
-    const [inputData, setInputData] = useState<Partial<Yarn>>(yarn);
-    
+  const [isEdit, setIsEdit] = useState<boolean>(false);
+  const [inputData, setInputData] = useState<Partial<Yarn>>(yarn);
 
-    const toggleIsEdit = () => setIsEdit(prevIsEdit => !prevIsEdit);
+  // Background color for the card. Start with the (sanitized) CSS color name.
+  const [bg, setBg] = useState<string>(sanitizeColor(yarn.color));
 
-    const onClose = () => {
-        setIsEdit(false);
-        setInputData(yarn);
+  // simple in-memory cache for this session
+  const cacheRef = useRef(new Map<string, string>());
+
+  // We want the background to reflect the saved yarn.color (not the in-progress edits)
+  const savedColorName = useMemo(() => sanitizeColor(yarn.color), [yarn.color]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    // Optimistic: use the CSS color name immediately (browser may support it)
+    setBg(savedColorName);
+
+    // If we've looked this up already, use it
+    const cached = cacheRef.current.get(savedColorName);
+    if (cached) {
+      setBg(cached);
+      return;
     }
 
-    const handleInputChange = (field: InputEnum, value: string) => {
-        setInputData({ ...inputData, [field]: value})
+    // Best-effort: resolve to a hex via API
+    fetchHexByName(savedColorName).then((hex) => {
+      if (cancelled) return;
+      if (hex) {
+        cacheRef.current.set(savedColorName, hex);
+        setBg(hex);
+      } else {
+        // Stay on the name; cache to avoid repeated calls
+        cacheRef.current.set(savedColorName, savedColorName);
       }
+    });
 
-      const handleUpdate = () => {
-        setIsEdit(false);
-        onUpdate(yarn.id, inputData);
-      }
+    return () => {
+      cancelled = true;
+    };
+  }, [savedColorName]);
 
-    const inputClasses = clsx(
-        'bg-transparent',
-        'border-0',
-        'py-2',
-        'px-4',
-        'rounded-md',
-        !(yarn.color == 'black') ? 'text-black' : 'text-white'
-    )
+  const toggleIsEdit = () => setIsEdit((v) => !v);
 
-    const cardContainerClasses = clsx(
-      'h-48',
-      'group', 
-      'relative', 
-      'rounded-md',
-      'flex',
-      'flex-col', 
-      'justify-between',
-      'shadow-slate-900',
-      'shadow-md',
-      'p-4',
-      !(yarn.color == 'black') ? 'text-black' : 'text-white'
-    )
+  const onClose = () => {
+    setIsEdit(false);
+    setInputData(yarn);
+  };
 
-    const getData = function getData(color : string) {
-      // note: does not work because of rate limiting
-      // const url = "https://api.color.pizza/v1/names/?name=forest%20green";
-      const url = `https://api.color.pizza/v1/names/?name=${color}`;
-      try {
-        const request = new XMLHttpRequest();
-        request.open("GET", url, false); // `false` makes the request synchronous
-        request.send(null);
+  const handleInputChange = (field: InputEnum, value: string) => {
+    setInputData((prev) => ({ ...prev, [field]: value }));
+  };
 
-        if (request.status === 200) {
-          console.log(request.responseText);
-        }
-        else {
-          throw new Error(`Response status: ${JSON.stringify(request)}`);
-        }
+  const handleUpdate = () => {
+    setIsEdit(false);
+    onUpdate(yarn.id, inputData);
+  };
 
-        const result = JSON.parse(request.responseText);
-        console.log(result);
-        console.log(result.colors[0].hex);
-        return result.colors[0].hex;
-      } catch (error) {
-        console.error(error.message);
-        return color;
-      }
-    }
+  const dark = isDarkBg(bg);
 
-    const fetchData = async function fetchData(color : string) {
-      // note: does not work because of rate limiting
-      // const url = "https://api.color.pizza/v1/names/?name=forest%20green";
-      const url = `https://api.color.pizza/v1/names/?name=${color}`;
-      try {
-        const response = await fetch(url);
-        if (!response.ok) {
-          console.log(`error: Response status: ${response.status}`);
-          return color;
-        }
+  const inputClasses = clsx(
+    "bg-transparent",
+    "border-0",
+    "py-2",
+    "px-4",
+    "rounded-md",
+    dark ? "text-white" : "text-black",
+    isEdit && "bg-gray-900 cursor-text"
+  );
 
-        const result = await response.json();
-        console.log(result);
-        console.log(result.colors[0].hex);
-        return result.colors[0].hex;
-      } catch (error) {
-        console.error(error.message);
-        return color;
-      }
+  const cardContainerClasses = clsx(
+    "h-48",
+    "group",
+    "relative",
+    "rounded-md",
+    "flex",
+    "flex-col",
+    "justify-between",
+    "shadow-slate-900",
+    "shadow-md",
+    "p-4",
+    dark ? "text-white" : "text-black"
+  );
 
-        
-    }
+  return (
+    <div
+      key={yarn.id}
+      className={cardContainerClasses}
+      style={{ backgroundColor: bg }}
+    >
+      <h1 className="font-semibold">Yarn Card</h1>
 
-    const returnColor =  () => {
-      var color = yarn.color;
+      <div>
+        <input
+          className={clsx(inputClasses, "text-xl mb-2 font-bold")}
+          value={inputData.color ?? ""}
+          onChange={(e) => handleInputChange(InputEnum.Color, e.target.value)}
+        />
 
-      // use default
-      if(!color){
-        color = "slate"
-      }
-      else{
-        // sanitize input
-        color = color.toLowerCase();
-        color = color.trim();
-      }
-
-
-      // return  getData(color);
-      return fetchData(color).then((result) => {return result;});
-    }
-
-    
-
-    return (
-        <div key={yarn.id} className={
-            clsx(cardContainerClasses
-            )
-            }
-            style={{backgroundColor:  returnColor()}} >
-          <h1>Yarn Card</h1>
-        <div>
-          <input className={
-            clsx(inputClasses,
-                "text-xl mb-2 font-bold",
-                 {
-                'bg-gray-900': isEdit,
-                'cursor-text': isEdit
-              })
-            } 
-            value={inputData.color} 
-            onChange={(e) => handleInputChange(InputEnum.Color, e.target.value)}
-            />
-          <input className={clsx(inputClasses, {
-            'bg-gray-900': isEdit,
-            'cursor-text': isEdit
-          })} 
-          value={inputData.weight}
+        <input
+          className={inputClasses}
+          value={inputData.weight ?? ""}
           onChange={(e) => handleInputChange(InputEnum.Weight, e.target.value)}
+        />
+      </div>
+
+      <input
+        className={inputClasses}
+        value={inputData.length ?? ""}
+        onChange={(e) => handleInputChange(InputEnum.Length, e.target.value)}
+      />
+
+      {isEdit ? (
+        <>
+          <CheckIcon
+            onClick={handleUpdate}
+            className="h-6 w-6 text-green-500 absolute top-4 right-12 cursor-pointer"
           />
-        </div>
-        <input className={
-            clsx(inputClasses, 
-                {
-                'bg-gray-900': isEdit,
-                'cursor-text': isEdit
-              })
-            } 
-            value={yarn.length}
-            onChange={(e) => handleInputChange(InputEnum.Length, e.target.value)}
-             />
-        {
-            isEdit ?
-            <>        
-                <CheckIcon onClick={handleUpdate} className="h-6 w-6 text-green-500 absolute top-4 right-12 cursor-pointer" />
-                <XCircleIcon onClick={onClose} className="h-6 w-6 text-red-900 absolute top-4 right-4 cursor-pointer" />
-            </> :
-            <button className="btn btn-active btn-ghost hidden group-hover:block absolute top-4 right-4 p-0" onClick={toggleIsEdit}>
-            <PencilSquareIcon className="h-6 w-6 text-slate-50 cursor-pointer" />
-            </button>
-    }
+          <XCircleIcon
+            onClick={onClose}
+            className="h-6 w-6 text-red-900 absolute top-4 right-4 cursor-pointer"
+          />
+        </>
+      ) : (
+        <button
+          className="btn btn-active btn-ghost hidden group-hover:block absolute top-4 right-4 p-0"
+          onClick={toggleIsEdit}
+          aria-label="Edit"
+        >
+          <PencilSquareIcon className="h-6 w-6 text-slate-50 cursor-pointer" />
+        </button>
+      )}
     </div>
-    )
-    }
+  );
+};
 
 export default YarnCard;
