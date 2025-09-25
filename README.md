@@ -22,7 +22,7 @@ This uses following libraries:
 
 <img width="562" alt="Screen Shot 2023-04-07 at 9 46 38 AM" src="./screenshots/frontpage.png">
 
-Yarn can be added, listed and editted. The application uses network calls through Fetch API to a public API that parses names to hex codes. This allows each yarn inventory entry to display the appropriate color.
+Yarn can be added, listed and edited. The application uses network calls through Fetch API to a public API that parses names to hex codes. This allows each yarn inventory entry to display the appropriate color.
 Set up
 
 ```shell
